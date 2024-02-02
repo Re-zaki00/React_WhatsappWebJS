@@ -1,0 +1,1 @@
+this is the storage folder of the app for session storage
