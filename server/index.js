@@ -8,11 +8,13 @@ const server = require('http').createServer(app);
 const { Server } = require('socket.io');
 const io = new Server(server);
 const puppeteer = require('puppeteer');
+const fs = require('fs');
+const path = require('path');
 
 app.use(cors());
 
-app.get('/', (req, res) => {
-    res.send("<h1>Hello World !</h1>");
+app.get("/", (req, res) => {
+    res.send("<h1>Server Side !</h1>");
 });
 
 server.listen(3000, () => {
@@ -22,12 +24,29 @@ server.listen(3000, () => {
 // Define allSessionsObject globally
 const allSessionsObject = {};
 
+// Function to delete a WhatsApp session
+const deleteWhatsappSession = (id) => {
+    const sessionDirectoryName = `session-${id}`;
+    const sessionDirectoryPath = path.join(__dirname, './SessionStore', sessionDirectoryName);
+
+    if (fs.existsSync(sessionDirectoryPath)) {
+        // Use fs.rmdirSync() to remove the directory
+        fs.rmdirSync(sessionDirectoryPath, { recursive: true });
+        console.log(`Session ${id} deleted.`);
+    } else {
+        console.log(`Session ${id} not found.`);
+    }
+};
+
 // Function to create a WhatsApp session
 const createWhatsappSession = (id, socket) => {
     // const savedSessions = new Map(); // Map to store session data
     const client = new Client({
         puppeteer: { headless: true },
-        authStrategy: new LocalAuth({ clientId: id })
+        authStrategy: new LocalAuth({ 
+            clientId: id,
+            dataPath: 'SessionStore' 
+        })
     });
 
     // Listen for QR code event
@@ -70,6 +89,13 @@ io.on("connection", (socket) => {
         const { id } = data;
         createWhatsappSession(id, socket);
     });
+
+    // Listen for deleteSession event
+    socket.on('deleteSession', (id) => {
+        console.log(`Deleting session ${id}`);
+        deleteWhatsappSession(id);
+    });
+
 
     // Listen for sendMessage event
     socket.on('sendMessage', (data) => {
