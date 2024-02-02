@@ -3,7 +3,7 @@ import io from 'socket.io-client';
 import QRCode from "react-qr-code";
 import { useState, useEffect } from 'react';
 
-const socket = io.connect("http://localhost:3000", {});
+const socket = io.connect("http://localhost:3000/", {});
 
 function App() {
   const [session, setSession] = useState("");
@@ -50,9 +50,12 @@ function App() {
     return () => {
       socket.off("qr");
       socket.off("ready");
-      socket.off("allChats");
     };
   }, []);
+
+  const handleDeleteSession = async () => {
+    socket.emit('deleteSession', id);
+  };
 
   const handleSendMessage = async () => {
     // Append @c.us to the contactNumber
@@ -118,8 +121,10 @@ function App() {
             onChange={(e) => setTextMessage(e.target.value)}
           />
           <button onClick={handleSendMessage}>Send Message</button>
-          {/* Go Back Button */}
-          <button onClick={handleGoBack}>Go Back</button>
+          <div>
+            <button onClick={handleGoBack}>Go Back</button>
+            <button onClick={handleDeleteSession}>Delete Session</button>
+          </div>
         </div>
       )}
     </div>
