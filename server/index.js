@@ -1,33 +1,36 @@
-// index.js
 const express = require('express');
 const cors = require('cors');
-const { Client, LocalAuth } = require('whatsapp-web.js');
 const app = express();
 const port = 3000;
-const server = require('http').createServer(app);
+const { Client, LocalAuth } = require('whatsapp-web.js');
 const { Server } = require('socket.io');
+const server = require('http').createServer(app);
 const io = new Server(server);
-const puppeteer = require('puppeteer');
 const fs = require('fs');
 const path = require('path');
 
 app.use(cors());
 
-app.get("/", (req, res) => {
-    res.send("<h1>Server Side !</h1>");
+// Define the root route to serve the index.html file
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'client', 'build', 'index.html'));
 });
 
-server.listen(3000, () => {
-    console.log("Listening on *:3000");
+// Serve static files from the 'client/public' directory
+app.use(express.static(path.join(__dirname, '..', 'client', 'build')));
+
+// Start the Express server
+server.listen(port, () => {
+    console.log("Server is running on port " + port);
 });
 
-// Define allSessionsObject globally
+// Define an object to store all WhatsApp sessions
 const allSessionsObject = {};
 
 // Function to delete a WhatsApp session
 const deleteWhatsappSession = (id) => {
     const sessionDirectoryName = `session-${id}`;
-    const sessionDirectoryPath = path.join(__dirname, './SessionStore', sessionDirectoryName);
+    const sessionDirectoryPath = path.join(__dirname, 'SessionStore', sessionDirectoryName);
 
     if (fs.existsSync(sessionDirectoryPath)) {
         // Use fs.rmdirSync() to remove the directory
@@ -40,7 +43,6 @@ const deleteWhatsappSession = (id) => {
 
 // Function to create a WhatsApp session
 const createWhatsappSession = (id, socket) => {
-    // const savedSessions = new Map(); // Map to store session data
     const client = new Client({
         puppeteer: { headless: true },
         authStrategy: new LocalAuth({ 
@@ -78,7 +80,7 @@ io.on("connection", (socket) => {
         console.log("user disconnected");
     });
 
-    socket.on('Connected', (data) => {
+    socket.on('connected', (data) => {
         console.log('connected to the server', data);
         socket.emit('hello', 'Hello from server');
     });
@@ -95,7 +97,6 @@ io.on("connection", (socket) => {
         console.log(`Deleting session ${id}`);
         deleteWhatsappSession(id);
     });
-
 
     // Listen for sendMessage event
     socket.on('sendMessage', (data) => {
