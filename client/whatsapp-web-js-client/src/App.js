@@ -1,14 +1,15 @@
+// App.js
+
 import './App.css';
 import io from 'socket.io-client';
 import QRCode from "react-qr-code";
 import { useState, useEffect } from 'react';
 
-const socket = io.connect("http://localhost:3000/", {});
+const socket = io.connect("/", {});
 
 function App() {
   const [session, setSession] = useState("");
   const [qrCode, setQrCode] = useState("");
-  const [authenticated, setAuthenticated] = useState(false);
   const [contactNumber, setContactNumber] = useState("");
   const [textMessage, setTextMessage] = useState("");
 
@@ -41,7 +42,6 @@ function App() {
       console.log(data);
       const { id } = data;
       setId(id);
-      setAuthenticated(true);
       setShowQRCode(false);
       setShowWaitingMessage(true);
       setShowSendMessage(true);
@@ -50,31 +50,15 @@ function App() {
     return () => {
       socket.off("qr");
       socket.off("ready");
+      socket.off("allChats");
     };
   }, []);
-
-  const handleDeleteSession = async () => {
-    socket.emit('deleteSession', id);
-  };
 
   const handleSendMessage = async () => {
     // Append @c.us to the contactNumber
     const formattedContactNumber = contactNumber + "@c.us";
     // Emit event to send message to server
     socket.emit('sendMessage', { id, formattedContactNumber, textMessage });
-  };
-
-  const handleGoBack = () => {
-    // Reset component state to return to the "Create Session" phase
-    setSession("");
-    setQrCode("");
-    setAuthenticated(false);
-    setContactNumber("");
-    setTextMessage("");
-    setShowCreateSession(true);
-    setShowQRCode(false);
-    setShowWaitingMessage(false);
-    setShowSendMessage(false);
   };
 
   return (
@@ -121,10 +105,6 @@ function App() {
             onChange={(e) => setTextMessage(e.target.value)}
           />
           <button onClick={handleSendMessage}>Send Message</button>
-          <div>
-            <button onClick={handleGoBack}>Go Back</button>
-            <button onClick={handleDeleteSession}>Delete Session</button>
-          </div>
         </div>
       )}
     </div>
